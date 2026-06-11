@@ -83,6 +83,7 @@ button {
 
 .pet-body[data-skin="work"] {
   width: min(96vw, 236px);
+  --keyboard-top: 58%;
 }
 
 .work-rig {
@@ -136,47 +137,62 @@ button {
 .virtual-keyboard {
   position: absolute;
   z-index: 5;
-  left: 3%;
-  right: 3%;
-  bottom: 5px;
+  left: 2%;
+  right: 2%;
+  bottom: 4px;
   display: grid;
-  gap: 3px;
-  padding: 7px 8px 10px;
+  gap: 2px;
+  padding: 7px 8px 9px;
   border: 1px solid rgba(53, 39, 33, 0.42);
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(44, 48, 52, 0.93), rgba(21, 24, 27, 0.94)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 6px);
   box-shadow:
-    0 12px 18px rgba(27, 16, 12, 0.28),
+    0 12px 18px rgba(27, 16, 12, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.virtual-keyboard::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 5px;
+  height: 1px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .keyboard-row {
   display: flex;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
 }
 
 .keyboard-row:nth-child(2) {
-  padding-left: 5px;
+  padding-left: 4px;
 }
 
 .keyboard-row:nth-child(3) {
-  padding-left: 10px;
+  padding-left: 8px;
+}
+
+.keyboard-row:nth-child(4) {
+  padding-left: 12px;
 }
 
 .virtual-key {
   position: relative;
-  min-width: 16px;
-  height: 15px;
+  min-width: 15px;
+  height: 13px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
   background: linear-gradient(180deg, #f6f1e2, #b7c1c0);
   color: #26211e;
-  font-size: 7.5px;
+  font-size: 7px;
   font-weight: 900;
   line-height: 1;
   box-shadow:
@@ -186,17 +202,29 @@ button {
 }
 
 .virtual-key.wide {
-  min-width: 44px;
+  min-width: 38px;
 }
 
-.virtual-key.is-hit {
-  animation: real-key-hit 260ms cubic-bezier(0.2, 0.9, 0.2, 1) 1;
+.virtual-key.space {
+  min-width: 66px;
+}
+
+.virtual-key.is-hit,
+.virtual-key.is-pressed {
   background: linear-gradient(180deg, #fff5a8, #f6b13d);
   color: #471915;
   box-shadow:
     0 0 12px rgba(255, 211, 80, 0.95),
     inset 0 -1px 0 rgba(90, 43, 19, 0.22),
     0 1px 0 rgba(0, 0, 0, 0.34);
+}
+
+.virtual-key.is-hit {
+  animation: real-key-hit 210ms cubic-bezier(0.2, 0.9, 0.2, 1) 1;
+}
+
+.virtual-key.is-pressed {
+  transform: translateY(2px) scale(0.94);
 }
 
 .virtual-keyboard[data-fallback="left"] .virtual-key[data-hand="left"],
@@ -255,6 +283,11 @@ button {
   --hoof-rotate: 14deg;
 }
 
+.hoof.is-pressing {
+  filter: brightness(1.04);
+}
+
+.hoof.is-striking,
 .pet-body[data-action="typing-left"] .hoof-left,
 .pet-body[data-action="typing-right"] .hoof-right {
   animation: hoof-key-tap 170ms ease-out 1;
@@ -262,6 +295,11 @@ button {
 
 .pet-body[data-action="typing-fast"] .hoof {
   animation: hoof-key-tap 120ms ease-out infinite;
+}
+
+.pet-body[data-skin="work"].is-keying-left .hoof-left,
+.pet-body[data-skin="work"].is-keying-right .hoof-right {
+  transform: translate(-50%, -42%) rotate(var(--hoof-rotate)) scale(1.04, 0.92);
 }
 
 .pet-body[data-skin="work"].typing-rush .virtual-keyboard {

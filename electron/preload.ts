@@ -36,8 +36,8 @@ contextBridge.exposeInMainWorld("petDesktop", {
     ipcRenderer.on("pet:skin-changed", listener);
     return () => ipcRenderer.off("pet:skin-changed", listener);
   },
-  onTypingBeat(callback: (payload: { vkCode: number; at: number }) => void): Unsubscribe {
-    const listener = (_event: Electron.IpcRendererEvent, payload: { vkCode: number; at: number }) => callback(payload);
+  onTypingBeat(callback: (payload: { vkCode: number; pressed?: boolean; at: number }) => void): Unsubscribe {
+    const listener = (_event: Electron.IpcRendererEvent, payload: { vkCode: number; pressed?: boolean; at: number }) => callback(payload);
     ipcRenderer.on("pet:typing-beat", listener);
     return () => ipcRenderer.off("pet:typing-beat", listener);
   },

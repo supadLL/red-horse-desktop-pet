@@ -103,8 +103,8 @@ function setSkin(skin: string): void {
   petWindow?.webContents.send("pet:skin-changed", currentSkin);
 }
 
-function broadcastTypingBeat(vkCode: number): void {
-  petWindow?.webContents.send("pet:typing-beat", { vkCode, at: Date.now() });
+function broadcastTypingBeat(vkCode: number, pressed = true): void {
+  petWindow?.webContents.send("pet:typing-beat", { vkCode, pressed, at: Date.now() });
 }
 
 function broadcastPointerMove(screenX: number, screenY: number): void {
@@ -142,9 +142,9 @@ function startKeyboardHook(): void {
   hook.stdout?.setEncoding("utf8");
   hook.stdout?.on("data", (chunk: string) => {
     chunk.split(/\r?\n/).forEach((line) => {
-      const keyMatch = line.match(/^KEYDOWN\s+(\d+)/);
+      const keyMatch = line.match(/^KEY(DOWN|UP)\s+(\d+)/);
       if (keyMatch) {
-        broadcastTypingBeat(Number(keyMatch[1]));
+        broadcastTypingBeat(Number(keyMatch[2]), keyMatch[1] === "DOWN");
         return;
       }
 

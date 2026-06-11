@@ -34,7 +34,13 @@ type KeySpec = {
   label: string;
   vkCode: number;
   hand: KeyHand;
-  wide?: boolean;
+  size?: "wide" | "space";
+};
+
+type TypingPayload = {
+  vkCode?: number;
+  pressed?: boolean;
+  at?: number;
 };
 
 const PET_NAME = "\u5c0f\u8d64\u5f71";
@@ -42,11 +48,23 @@ const MIN_SCALE = 0.8;
 const MAX_SCALE = 1.45;
 const SCALE_STEP = 0.1;
 const DEFAULT_HOOF_TARGETS: Record<KeyHand, { x: string; y: string }> = {
-  left: { x: "38%", y: "75%" },
-  right: { x: "66%", y: "75%" },
+  left: { x: "39%", y: "82%" },
+  right: { x: "63%", y: "82%" },
 };
 
 const keyRows: KeySpec[][] = [
+  [
+    { label: "1", vkCode: 49, hand: "left" },
+    { label: "2", vkCode: 50, hand: "left" },
+    { label: "3", vkCode: 51, hand: "left" },
+    { label: "4", vkCode: 52, hand: "left" },
+    { label: "5", vkCode: 53, hand: "left" },
+    { label: "6", vkCode: 54, hand: "right" },
+    { label: "7", vkCode: 55, hand: "right" },
+    { label: "8", vkCode: 56, hand: "right" },
+    { label: "9", vkCode: 57, hand: "right" },
+    { label: "0", vkCode: 48, hand: "right" },
+  ],
   [
     { label: "Q", vkCode: 81, hand: "left" },
     { label: "W", vkCode: 87, hand: "left" },
@@ -82,9 +100,9 @@ const keyRows: KeySpec[][] = [
     { label: "\u2192", vkCode: 39, hand: "right" },
   ],
   [
-    { label: "TAB", vkCode: 9, hand: "left", wide: true },
-    { label: "SPACE", vkCode: 32, hand: "right", wide: true },
-    { label: "ENT", vkCode: 13, hand: "right", wide: true },
+    { label: "TAB", vkCode: 9, hand: "left", size: "wide" },
+    { label: "SPACE", vkCode: 32, hand: "right", size: "space" },
+    { label: "ENT", vkCode: 13, hand: "right", size: "wide" },
   ],
 ];
 
@@ -98,7 +116,7 @@ function renderKeyboardRows(): string {
           ${row
             .map(
               (key) => `
-                <span class="virtual-key${key.wide ? " wide" : ""}" data-vk="${key.vkCode}" data-hand="${key.hand}">
+                <span class="virtual-key${key.size ? ` ${key.size}` : ""}" data-vk="${key.vkCode}" data-hand="${key.hand}">
                   ${key.label}
                 </span>
               `,
@@ -151,6 +169,8 @@ let speechTimer: number | undefined;
 let typingIdleTimer: number | undefined;
 let lastTypingAt = 0;
 let typingSide = 0;
+const pressedKeyTimers = new Map<number, number>();
+const handKeys = new Map<KeyHand, number>();
 let isDragging = false;
 let lastScreenX = 0;
 let lastScreenY = 0;
@@ -436,15 +456,55 @@ function setHoofTarget(hand: KeyHand, key?: HTMLElement): void {
   hooves[hand].style.setProperty("--hoof-y", `${clamp(y, 38, 92).toFixed(2)}%`);
 }
 
-function pulseKey(vkCode: number | undefined, hand: KeyHand, label: string): void {
+function clearKeyTimer(vkCode: number): void {
+  const timer = pressedKeyTimers.get(vkCode);
+  if (timer) {
+    window.clearTimeout(timer);
+    pressedKeyTimers.delete(vkCode);
+  }
+}
+
+function releaseKey(vkCode: number | undefined): void {
+  if (!vkCode) {
+    return;
+  }
+
+  clearKeyTimer(vkCode);
+  const hand = resolveKeyHand(vkCode);
+  const key = virtualKeys.get(vkCode);
+  key?.classList.remove("is-hit", "is-pressed");
+
+  if (handKeys.get(hand) === vkCode) {
+    handKeys.delete(hand);
+    hooves[hand].classList.remove("is-pressing", "is-striking");
+    setHoofTarget(hand);
+  }
+
+  petBody.classList.toggle("is-keying-left", handKeys.has("left"));
+  petBody.classList.toggle("is-keying-right", handKeys.has("right"));
+}
+
+function pressKey(vkCode: number | undefined, hand: KeyHand, label: string): void {
+  const previousKey = handKeys.get(hand);
+  if (previousKey && previousKey !== vkCode) {
+    releaseKey(previousKey);
+  }
+
   const key = vkCode ? virtualKeys.get(vkCode) : undefined;
   setHoofTarget(hand, key);
+  hooves[hand].classList.remove("is-striking");
+  void hooves[hand].offsetWidth;
+  hooves[hand].classList.add("is-pressing", "is-striking");
+  petBody.classList.toggle("is-keying-left", hand === "left" || handKeys.has("left"));
+  petBody.classList.toggle("is-keying-right", hand === "right" || handKeys.has("right"));
 
-  if (key) {
-    key.classList.remove("is-hit");
+  if (vkCode && key) {
+    clearKeyTimer(vkCode);
+    handKeys.set(hand, vkCode);
+    key.classList.remove("is-hit", "is-pressed");
     void key.offsetWidth;
-    key.classList.add("is-hit");
-    window.setTimeout(() => key.classList.remove("is-hit"), 260);
+    key.classList.add("is-hit", "is-pressed");
+    pressedKeyTimers.set(vkCode, window.setTimeout(() => releaseKey(vkCode), 170));
   } else {
     virtualKeyboard.dataset.fallback = hand;
     window.setTimeout(() => {
@@ -494,8 +554,13 @@ function stopTimers(): void {
   window.clearInterval(moodTimer);
 }
 
-function handleTypingBeat(payload?: { vkCode?: number; at?: number }): void {
+function handleTypingBeat(payload?: TypingPayload): void {
   if (state.skin !== "work") {
+    return;
+  }
+
+  if (payload?.pressed === false) {
+    releaseKey(payload.vkCode);
     return;
   }
 
@@ -510,15 +575,19 @@ function handleTypingBeat(payload?: { vkCode?: number; at?: number }): void {
   render();
 
   const label = formatKeyLabel(vkCode);
-  pulseKey(vkCode, hand, label);
+  pressKey(vkCode, hand, label);
   setTypingRush(isBurst);
 
   window.clearTimeout(typingIdleTimer);
   typingIdleTimer = window.setTimeout(() => {
     state.action = state.keyCount > 40 ? "work-tired" : "thinking";
     setTypingRush(false);
-    setHoofTarget("left");
-    setHoofTarget("right");
+    if (!handKeys.has("left")) {
+      setHoofTarget("left");
+    }
+    if (!handKeys.has("right")) {
+      setHoofTarget("right");
+    }
     render();
   }, 650);
 }
@@ -648,12 +717,17 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" || !petMenu.hidden) {
     return;
   }
-  handleTypingBeat({ vkCode: keyToVkCode(event), at: Date.now() });
+  handleTypingBeat({ vkCode: keyToVkCode(event), pressed: true, at: Date.now() });
+});
+
+window.addEventListener("keyup", (event) => {
+  handleTypingBeat({ vkCode: keyToVkCode(event), pressed: false, at: Date.now() });
 });
 
 window.addEventListener("beforeunload", () => {
   stopTimers();
   window.clearTimeout(typingIdleTimer);
+  pressedKeyTimers.forEach((timer) => window.clearTimeout(timer));
   unsubscribeScale?.();
   unsubscribePin?.();
   unsubscribeSkin?.();
