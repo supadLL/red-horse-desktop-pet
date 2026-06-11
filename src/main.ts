@@ -172,23 +172,6 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <div class="virtual-keyboard">
           ${renderKeyboardRows()}
         </div>
-        <div class="input-trail">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
-      <div class="typing-effects" data-beat="idle" aria-hidden="true">
-        <span class="key-pop key-pop-a">A</span>
-        <span class="key-pop key-pop-b">K</span>
-        <span class="tap-spark tap-spark-a"></span>
-        <span class="tap-spark tap-spark-b"></span>
-        <span class="typing-meter">
-          <i></i>
-          <i></i>
-          <i></i>
-          <i></i>
-        </span>
       </div>
     </section>
     <nav class="pet-menu" aria-label="\u684c\u5ba0\u4ea4\u4e92\u83dc\u5355" role="menu" hidden>
@@ -209,15 +192,12 @@ const petHitbox = document.querySelector<HTMLButtonElement>(".pet-hitbox")!;
 const sprite = document.querySelector<HTMLElement>(".pet-sprite")!;
 const speech = document.querySelector<HTMLElement>(".speech")!;
 const petMenu = document.querySelector<HTMLElement>(".pet-menu")!;
-const typingEffects = document.querySelector<HTMLElement>(".typing-effects")!;
-const keyPops = Array.from(document.querySelectorAll<HTMLElement>(".key-pop"));
 const workRig = document.querySelector<HTMLElement>(".work-rig")!;
 const virtualKeyboard = document.querySelector<HTMLElement>(".virtual-keyboard")!;
 const hooves: Record<KeyHand, HTMLElement> = {
   left: document.querySelector<HTMLElement>(".hoof-left")!,
   right: document.querySelector<HTMLElement>(".hoof-right")!,
 };
-const inputTrailSlots = Array.from(document.querySelectorAll<HTMLElement>(".input-trail span"));
 const virtualKeys = new Map<number, HTMLElement>(
   Array.from(document.querySelectorAll<HTMLElement>(".virtual-key")).map((key) => [Number(key.dataset.vk), key]),
 );
@@ -396,6 +376,32 @@ function formatKeyLabel(vkCode?: number): string {
   return labels[vkCode] || "\u952e";
 }
 
+function keyToVkCode(event: KeyboardEvent): number | undefined {
+  const key = event.key.toUpperCase();
+  if (key.length === 1) {
+    const code = key.charCodeAt(0);
+    if ((code >= 48 && code <= 57) || (code >= 65 && code <= 90)) {
+      return code;
+    }
+  }
+
+  const labels: Record<string, number> = {
+    BACKSPACE: 8,
+    TAB: 9,
+    ENTER: 13,
+    SHIFT: 16,
+    CONTROL: 17,
+    ALT: 18,
+    ESCAPE: 27,
+    " ": 32,
+    ARROWLEFT: 37,
+    ARROWUP: 38,
+    ARROWRIGHT: 39,
+    ARROWDOWN: 40,
+  };
+  return labels[key];
+}
+
 function resolveKeyHand(vkCode?: number): KeyHand {
   if (vkCode && keyHandByVkCode.has(vkCode)) {
     return keyHandByVkCode.get(vkCode)!;
@@ -446,11 +452,7 @@ function pulseKey(vkCode: number | undefined, hand: KeyHand, label: string): voi
     }, 220);
   }
 
-  inputTrailSlots.unshift(inputTrailSlots.pop()!);
-  inputTrailSlots.forEach((slot, index) => {
-    slot.textContent = index === 0 ? label : slot.textContent;
-    slot.dataset.fresh = index === 0 ? "true" : "false";
-  });
+  virtualKeyboard.dataset.lastKey = label;
 }
 
 function setTypingRush(enabled: boolean): void {
@@ -508,21 +510,12 @@ function handleTypingBeat(payload?: { vkCode?: number; at?: number }): void {
   render();
 
   const label = formatKeyLabel(vkCode);
-  const beat = state.action === "typing-fast" ? "fast" : hand;
-  typingEffects.dataset.beat = beat;
-  typingEffects.dataset.key = label;
-  typingEffects.classList.remove("beat-left", "beat-right", "beat-fast");
-  void typingEffects.offsetWidth;
-  typingEffects.classList.add(`beat-${beat}`);
-  keyPops[typingSide].textContent = label;
   pulseKey(vkCode, hand, label);
   setTypingRush(isBurst);
 
   window.clearTimeout(typingIdleTimer);
   typingIdleTimer = window.setTimeout(() => {
     state.action = state.keyCount > 40 ? "work-tired" : "thinking";
-    typingEffects.dataset.beat = "idle";
-    typingEffects.classList.remove("beat-left", "beat-right", "beat-fast");
     setTypingRush(false);
     setHoofTarget("left");
     setHoofTarget("right");
@@ -655,7 +648,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" || !petMenu.hidden) {
     return;
   }
-  handleTypingBeat();
+  handleTypingBeat({ vkCode: keyToVkCode(event), at: Date.now() });
 });
 
 window.addEventListener("beforeunload", () => {

@@ -82,25 +82,13 @@ button {
 }
 
 .pet-body[data-skin="work"] {
-  width: min(88vw, 210px);
-}
-
-.typing-effects {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: none;
-  pointer-events: none;
-}
-
-.pet-body[data-skin="work"] .typing-effects {
-  display: block;
+  width: min(96vw, 236px);
 }
 
 .work-rig {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 5;
   display: none;
   pointer-events: none;
 }
@@ -147,12 +135,13 @@ button {
 
 .virtual-keyboard {
   position: absolute;
-  left: 4%;
+  z-index: 5;
+  left: 3%;
   right: 3%;
-  bottom: 10px;
+  bottom: 5px;
   display: grid;
   gap: 3px;
-  padding: 6px 7px 8px;
+  padding: 7px 8px 10px;
   border: 1px solid rgba(53, 39, 33, 0.42);
   border-radius: 8px;
   background:
@@ -179,15 +168,15 @@ button {
 
 .virtual-key {
   position: relative;
-  min-width: 14px;
-  height: 14px;
+  min-width: 16px;
+  height: 15px;
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 4px;
   background: linear-gradient(180deg, #f6f1e2, #b7c1c0);
   color: #26211e;
-  font-size: 7px;
+  font-size: 7.5px;
   font-weight: 900;
   line-height: 1;
   box-shadow:
@@ -197,7 +186,7 @@ button {
 }
 
 .virtual-key.wide {
-  min-width: 38px;
+  min-width: 44px;
 }
 
 .virtual-key.is-hit {
@@ -217,10 +206,11 @@ button {
 
 .hoof {
   position: absolute;
+  z-index: 8;
   left: var(--hoof-x);
   top: var(--hoof-y);
-  width: 22px;
-  height: 18px;
+  width: 24px;
+  height: 19px;
   border-radius: 50% 50% 44% 44%;
   background:
     radial-gradient(circle at 36% 26%, rgba(255, 235, 190, 0.48), transparent 28%),
@@ -230,6 +220,20 @@ button {
     inset 0 -4px 0 rgba(37, 16, 14, 0.22);
   transform: translate(-50%, -50%) rotate(var(--hoof-rotate, -8deg));
   transition: left 90ms cubic-bezier(0.2, 0.9, 0.2, 1), top 90ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.hoof::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: -28px;
+  width: 11px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ed6750, #b82e25 72%, #8c221d);
+  box-shadow: inset -2px 0 0 rgba(83, 18, 15, 0.18);
+  transform: rotate(calc(var(--hoof-rotate) * -0.58));
+  transform-origin: bottom center;
 }
 
 .hoof::after {
@@ -253,48 +257,19 @@ button {
 
 .pet-body[data-action="typing-left"] .hoof-left,
 .pet-body[data-action="typing-right"] .hoof-right {
-  animation: hoof-key-tap 150ms ease-out 1;
+  animation: hoof-key-tap 170ms ease-out 1;
 }
 
 .pet-body[data-action="typing-fast"] .hoof {
-  animation: hoof-key-tap 130ms ease-out infinite;
-}
-
-.input-trail {
-  position: absolute;
-  left: 50%;
-  bottom: 68px;
-  display: flex;
-  gap: 4px;
-  transform: translateX(-50%);
-}
-
-.input-trail span {
-  min-width: 18px;
-  height: 17px;
-  display: grid;
-  place-items: center;
-  border-radius: 5px;
-  background: rgba(255, 249, 220, 0.92);
-  color: #5c1f18;
-  font-size: 9px;
-  font-weight: 900;
-  box-shadow: 0 5px 10px rgba(32, 21, 17, 0.18);
-  opacity: 0.72;
-  transform: translateY(0);
-}
-
-.input-trail span[data-fresh="true"] {
-  animation: input-trail-pop 230ms ease-out 1;
-  opacity: 1;
+  animation: hoof-key-tap 120ms ease-out infinite;
 }
 
 .pet-body[data-skin="work"].typing-rush .virtual-keyboard {
   animation: keyboard-rush 160ms ease-in-out infinite;
 }
 
-.pet-body[data-skin="work"].typing-rush .input-trail span {
-  background: rgba(255, 222, 98, 0.96);
+.pet-body[data-skin="work"].typing-rush .virtual-key.is-hit {
+  background: linear-gradient(180deg, #fff7b8, #ff9f2d);
 }
 
 .aura {
@@ -432,123 +407,6 @@ button {
 .pet-body[data-skin="work"][data-action="walk"] .pet-sprite,
 .pet-body[data-skin="work"][data-action="drag"] .pet-sprite {
   background-position: 100% 0;
-}
-
-.key-pop {
-  position: absolute;
-  left: 58%;
-  top: 67%;
-  min-width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border-radius: 5px;
-  border: 1px solid rgba(54, 45, 40, 0.32);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(228, 232, 235, 0.9));
-  color: #4f261e;
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 1;
-  opacity: 0;
-  transform: translateY(0) scale(0.72);
-  box-shadow: 0 5px 10px rgba(52, 34, 28, 0.2);
-}
-
-.key-pop-b {
-  left: 69%;
-  top: 66%;
-}
-
-.tap-spark {
-  position: absolute;
-  left: 62%;
-  top: 63%;
-  width: 16px;
-  height: 16px;
-  opacity: 0;
-}
-
-.tap-spark::before,
-.tap-spark::after {
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 0;
-  width: 2px;
-  height: 13px;
-  border-radius: 999px;
-  background: #ffd65f;
-  box-shadow: 0 0 5px rgba(255, 190, 64, 0.95);
-}
-
-.tap-spark::after {
-  transform: rotate(90deg);
-}
-
-.tap-spark-b {
-  left: 73%;
-  top: 62%;
-}
-
-.typing-meter {
-  position: absolute;
-  left: 53%;
-  top: 78%;
-  display: flex;
-  align-items: end;
-  gap: 2px;
-  padding: 2px 4px;
-  border-radius: 999px;
-  background: rgba(44, 39, 38, 0.5);
-  opacity: 0;
-  transform: translateY(2px);
-}
-
-.typing-meter i {
-  width: 3px;
-  height: 6px;
-  border-radius: 999px;
-  background: #ffe091;
-  transform-origin: bottom;
-}
-
-.typing-effects.beat-left .key-pop-a,
-.typing-effects.beat-right .key-pop-b,
-.typing-effects.beat-fast .key-pop {
-  animation: key-pop 360ms ease-out 1;
-}
-
-.typing-effects.beat-left .tap-spark-a,
-.typing-effects.beat-right .tap-spark-b,
-.typing-effects.beat-fast .tap-spark {
-  animation: tap-spark 280ms ease-out 1;
-}
-
-.typing-effects.beat-left .typing-meter,
-.typing-effects.beat-right .typing-meter,
-.typing-effects.beat-fast .typing-meter {
-  opacity: 1;
-}
-
-.typing-effects.beat-left .typing-meter i,
-.typing-effects.beat-right .typing-meter i {
-  animation: meter-bounce 420ms ease-in-out 1;
-}
-
-.typing-effects.beat-fast .typing-meter i {
-  animation: meter-bounce 220ms ease-in-out infinite;
-}
-
-.typing-effects.beat-fast .typing-meter i:nth-child(2) {
-  animation-delay: 40ms;
-}
-
-.typing-effects.beat-fast .typing-meter i:nth-child(3) {
-  animation-delay: 80ms;
-}
-
-.typing-effects.beat-fast .typing-meter i:nth-child(4) {
-  animation-delay: 120ms;
 }
 
 .pet-body[data-mood="happy"] .aura {
@@ -744,46 +602,6 @@ button {
   }
 }
 
-@keyframes key-pop {
-  0% {
-    opacity: 0;
-    transform: translateY(2px) scale(0.72);
-  }
-  35% {
-    opacity: 1;
-    transform: translateY(-13px) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-22px) scale(0.84);
-  }
-}
-
-@keyframes tap-spark {
-  0% {
-    opacity: 0;
-    transform: scale(0.45) rotate(0deg);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1) rotate(18deg);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.5) rotate(40deg);
-  }
-}
-
-@keyframes meter-bounce {
-  0%,
-  100% {
-    transform: scaleY(0.65);
-  }
-  45% {
-    transform: scaleY(1.8);
-  }
-}
-
 @keyframes real-key-hit {
   0% {
     transform: translateY(0) scale(1);
@@ -815,21 +633,6 @@ button {
   }
   100% {
     transform: translate(-50%, -50%) rotate(var(--hoof-rotate));
-  }
-}
-
-@keyframes input-trail-pop {
-  0% {
-    transform: translateY(6px) scale(0.78);
-    opacity: 0;
-  }
-  55% {
-    transform: translateY(-4px) scale(1.08);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
   }
 }
 
