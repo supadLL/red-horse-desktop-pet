@@ -26,6 +26,7 @@ let currentScale = 1;
 let currentSkin = "classic";
 let isAlwaysOnTop = true;
 let isQuitting = false;
+let lastPointerBroadcastAt = 0;
 
 app.setName(APP_NAME);
 app.setAppUserModelId("com.local.redhorsedesktoppet");
@@ -106,6 +107,15 @@ function broadcastTypingBeat(vkCode: number): void {
   petWindow?.webContents.send("pet:typing-beat", { vkCode, at: Date.now() });
 }
 
+function broadcastPointerMove(screenX: number, screenY: number): void {
+  const now = Date.now();
+  if (now - lastPointerBroadcastAt < 33) {
+    return;
+  }
+  lastPointerBroadcastAt = now;
+  petWindow?.webContents.send("pet:pointer-move", { screenX, screenY, at: now });
+}
+
 function startKeyboardHook(): void {
   if (process.platform !== "win32" || keyboardHook) {
     return;
@@ -132,9 +142,15 @@ function startKeyboardHook(): void {
   hook.stdout?.setEncoding("utf8");
   hook.stdout?.on("data", (chunk: string) => {
     chunk.split(/\r?\n/).forEach((line) => {
-      const match = line.match(/^KEYDOWN\s+(\d+)/);
-      if (match) {
-        broadcastTypingBeat(Number(match[1]));
+      const keyMatch = line.match(/^KEYDOWN\s+(\d+)/);
+      if (keyMatch) {
+        broadcastTypingBeat(Number(keyMatch[1]));
+        return;
+      }
+
+      const pointerMatch = line.match(/^MOUSEMOVE\s+(-?\d+)\s+(-?\d+)/);
+      if (pointerMatch) {
+        broadcastPointerMove(Number(pointerMatch[1]), Number(pointerMatch[2]));
       }
     });
   });

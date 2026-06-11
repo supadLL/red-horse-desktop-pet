@@ -11,6 +11,7 @@ type PetDesktopBridge = {
   onAlwaysOnTopChanged(callback: (value: boolean) => void): () => void;
   onSkinChanged(callback: (skin: string) => void): () => void;
   onTypingBeat(callback: (payload: { vkCode: number; at: number }) => void): () => void;
+  onPointerMove(callback: (payload: { screenX: number; screenY: number; at: number }) => void): () => void;
 };
 
 interface Window {

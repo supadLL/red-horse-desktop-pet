@@ -28,10 +28,87 @@ export type PetState = {
   keyCount: number;
 };
 
+type KeyHand = "left" | "right";
+
+type KeySpec = {
+  label: string;
+  vkCode: number;
+  hand: KeyHand;
+  wide?: boolean;
+};
+
 const PET_NAME = "\u5c0f\u8d64\u5f71";
 const MIN_SCALE = 0.8;
 const MAX_SCALE = 1.45;
 const SCALE_STEP = 0.1;
+const DEFAULT_HOOF_TARGETS: Record<KeyHand, { x: string; y: string }> = {
+  left: { x: "38%", y: "75%" },
+  right: { x: "66%", y: "75%" },
+};
+
+const keyRows: KeySpec[][] = [
+  [
+    { label: "Q", vkCode: 81, hand: "left" },
+    { label: "W", vkCode: 87, hand: "left" },
+    { label: "E", vkCode: 69, hand: "left" },
+    { label: "R", vkCode: 82, hand: "left" },
+    { label: "T", vkCode: 84, hand: "left" },
+    { label: "Y", vkCode: 89, hand: "right" },
+    { label: "U", vkCode: 85, hand: "right" },
+    { label: "I", vkCode: 73, hand: "right" },
+    { label: "O", vkCode: 79, hand: "right" },
+    { label: "P", vkCode: 80, hand: "right" },
+  ],
+  [
+    { label: "A", vkCode: 65, hand: "left" },
+    { label: "S", vkCode: 83, hand: "left" },
+    { label: "D", vkCode: 68, hand: "left" },
+    { label: "F", vkCode: 70, hand: "left" },
+    { label: "G", vkCode: 71, hand: "left" },
+    { label: "H", vkCode: 72, hand: "right" },
+    { label: "J", vkCode: 74, hand: "right" },
+    { label: "K", vkCode: 75, hand: "right" },
+    { label: "L", vkCode: 76, hand: "right" },
+  ],
+  [
+    { label: "Z", vkCode: 90, hand: "left" },
+    { label: "X", vkCode: 88, hand: "left" },
+    { label: "C", vkCode: 67, hand: "left" },
+    { label: "V", vkCode: 86, hand: "left" },
+    { label: "B", vkCode: 66, hand: "left" },
+    { label: "N", vkCode: 78, hand: "right" },
+    { label: "M", vkCode: 77, hand: "right" },
+    { label: "\u2190", vkCode: 37, hand: "left" },
+    { label: "\u2192", vkCode: 39, hand: "right" },
+  ],
+  [
+    { label: "TAB", vkCode: 9, hand: "left", wide: true },
+    { label: "SPACE", vkCode: 32, hand: "right", wide: true },
+    { label: "ENT", vkCode: 13, hand: "right", wide: true },
+  ],
+];
+
+const keyHandByVkCode = new Map<number, KeyHand>(keyRows.flat().map((key) => [key.vkCode, key.hand]));
+
+function renderKeyboardRows(): string {
+  return keyRows
+    .map(
+      (row) => `
+        <div class="keyboard-row">
+          ${row
+            .map(
+              (key) => `
+                <span class="virtual-key${key.wide ? " wide" : ""}" data-vk="${key.vkCode}" data-hand="${key.hand}">
+                  ${key.label}
+                </span>
+              `,
+            )
+            .join("")}
+        </div>
+      `,
+    )
+    .join("");
+}
 
 const state: PetState = {
   mood: "neutral",
@@ -88,6 +165,19 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <button class="pet-hitbox" type="button" aria-label="\u629a\u6478${PET_NAME}">
         <span class="pet-sprite" aria-hidden="true"></span>
       </button>
+      <div class="work-rig" aria-hidden="true">
+        <span class="work-gaze"></span>
+        <span class="hoof hoof-left"></span>
+        <span class="hoof hoof-right"></span>
+        <div class="virtual-keyboard">
+          ${renderKeyboardRows()}
+        </div>
+        <div class="input-trail">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
       <div class="typing-effects" data-beat="idle" aria-hidden="true">
         <span class="key-pop key-pop-a">A</span>
         <span class="key-pop key-pop-b">K</span>
@@ -121,6 +211,16 @@ const speech = document.querySelector<HTMLElement>(".speech")!;
 const petMenu = document.querySelector<HTMLElement>(".pet-menu")!;
 const typingEffects = document.querySelector<HTMLElement>(".typing-effects")!;
 const keyPops = Array.from(document.querySelectorAll<HTMLElement>(".key-pop"));
+const workRig = document.querySelector<HTMLElement>(".work-rig")!;
+const virtualKeyboard = document.querySelector<HTMLElement>(".virtual-keyboard")!;
+const hooves: Record<KeyHand, HTMLElement> = {
+  left: document.querySelector<HTMLElement>(".hoof-left")!,
+  right: document.querySelector<HTMLElement>(".hoof-right")!,
+};
+const inputTrailSlots = Array.from(document.querySelectorAll<HTMLElement>(".input-trail span"));
+const virtualKeys = new Map<number, HTMLElement>(
+  Array.from(document.querySelectorAll<HTMLElement>(".virtual-key")).map((key) => [Number(key.dataset.vk), key]),
+);
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -296,6 +396,81 @@ function formatKeyLabel(vkCode?: number): string {
   return labels[vkCode] || "\u952e";
 }
 
+function resolveKeyHand(vkCode?: number): KeyHand {
+  if (vkCode && keyHandByVkCode.has(vkCode)) {
+    return keyHandByVkCode.get(vkCode)!;
+  }
+  if (vkCode && vkCode >= 65 && vkCode <= 77) {
+    return "left";
+  }
+  if (vkCode && vkCode >= 78 && vkCode <= 90) {
+    return "right";
+  }
+  typingSide = 1 - typingSide;
+  return typingSide === 0 ? "left" : "right";
+}
+
+function setHoofTarget(hand: KeyHand, key?: HTMLElement): void {
+  if (!key) {
+    const target = DEFAULT_HOOF_TARGETS[hand];
+    hooves[hand].style.setProperty("--hoof-x", target.x);
+    hooves[hand].style.setProperty("--hoof-y", target.y);
+    return;
+  }
+
+  const rigRect = workRig.getBoundingClientRect();
+  const keyRect = key.getBoundingClientRect();
+  if (rigRect.width === 0 || rigRect.height === 0) {
+    return;
+  }
+
+  const x = ((keyRect.left + keyRect.width / 2 - rigRect.left) / rigRect.width) * 100;
+  const y = ((keyRect.top + keyRect.height / 2 - rigRect.top) / rigRect.height) * 100;
+  hooves[hand].style.setProperty("--hoof-x", `${clamp(x, 8, 92).toFixed(2)}%`);
+  hooves[hand].style.setProperty("--hoof-y", `${clamp(y, 38, 92).toFixed(2)}%`);
+}
+
+function pulseKey(vkCode: number | undefined, hand: KeyHand, label: string): void {
+  const key = vkCode ? virtualKeys.get(vkCode) : undefined;
+  setHoofTarget(hand, key);
+
+  if (key) {
+    key.classList.remove("is-hit");
+    void key.offsetWidth;
+    key.classList.add("is-hit");
+    window.setTimeout(() => key.classList.remove("is-hit"), 260);
+  } else {
+    virtualKeyboard.dataset.fallback = hand;
+    window.setTimeout(() => {
+      delete virtualKeyboard.dataset.fallback;
+    }, 220);
+  }
+
+  inputTrailSlots.unshift(inputTrailSlots.pop()!);
+  inputTrailSlots.forEach((slot, index) => {
+    slot.textContent = index === 0 ? label : slot.textContent;
+    slot.dataset.fresh = index === 0 ? "true" : "false";
+  });
+}
+
+function setTypingRush(enabled: boolean): void {
+  petBody.classList.toggle("typing-rush", enabled);
+  virtualKeyboard.classList.toggle("is-rushing", enabled);
+}
+
+function handlePointerMove(payload: { screenX: number; screenY: number }): void {
+  if (state.skin !== "work" || isDragging) {
+    return;
+  }
+
+  const centerX = window.screenX + window.innerWidth / 2;
+  const centerY = window.screenY + window.innerHeight / 2;
+  const lookX = clamp((payload.screenX - centerX) / 18, -8, 8);
+  const lookY = clamp((payload.screenY - centerY) / 18, -7, 7);
+  petBody.style.setProperty("--look-x", `${lookX.toFixed(2)}px`);
+  petBody.style.setProperty("--look-y", `${lookY.toFixed(2)}px`);
+}
+
 function startTimers(): void {
   idleTimer = window.setInterval(runIdleBeat, 9000);
   moodTimer = window.setInterval(() => {
@@ -325,23 +500,32 @@ function handleTypingBeat(payload?: { vkCode?: number; at?: number }): void {
   const now = Date.now();
   const isBurst = now - lastTypingAt < 180;
   lastTypingAt = now;
-  typingSide = 1 - typingSide;
+  const vkCode = payload?.vkCode;
+  const hand = resolveKeyHand(vkCode);
+  typingSide = hand === "left" ? 0 : 1;
   state.keyCount += 1;
-  state.action = isBurst && state.keyCount % 4 === 0 ? "typing-fast" : typingSide === 0 ? "typing-left" : "typing-right";
+  state.action = isBurst && state.keyCount % 4 === 0 ? "typing-fast" : hand === "left" ? "typing-left" : "typing-right";
   render();
 
-  const beat = state.action === "typing-fast" ? "fast" : typingSide === 0 ? "left" : "right";
+  const label = formatKeyLabel(vkCode);
+  const beat = state.action === "typing-fast" ? "fast" : hand;
   typingEffects.dataset.beat = beat;
+  typingEffects.dataset.key = label;
   typingEffects.classList.remove("beat-left", "beat-right", "beat-fast");
   void typingEffects.offsetWidth;
   typingEffects.classList.add(`beat-${beat}`);
-  keyPops[typingSide].textContent = formatKeyLabel(payload?.vkCode);
+  keyPops[typingSide].textContent = label;
+  pulseKey(vkCode, hand, label);
+  setTypingRush(isBurst);
 
   window.clearTimeout(typingIdleTimer);
   typingIdleTimer = window.setTimeout(() => {
     state.action = state.keyCount > 40 ? "work-tired" : "thinking";
     typingEffects.dataset.beat = "idle";
     typingEffects.classList.remove("beat-left", "beat-right", "beat-fast");
+    setTypingRush(false);
+    setHoofTarget("left");
+    setHoofTarget("right");
     render();
   }, 650);
 }
@@ -463,6 +647,10 @@ const unsubscribeTyping = window.petDesktop?.onTypingBeat((payload) => {
   handleTypingBeat(payload);
 });
 
+const unsubscribePointerMove = window.petDesktop?.onPointerMove((payload) => {
+  handlePointerMove(payload);
+});
+
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" || !petMenu.hidden) {
     return;
@@ -477,8 +665,11 @@ window.addEventListener("beforeunload", () => {
   unsubscribePin?.();
   unsubscribeSkin?.();
   unsubscribeTyping?.();
+  unsubscribePointerMove?.();
 });
 
+setHoofTarget("left");
+setHoofTarget("right");
 render();
 startTimers();
 window.setTimeout(() => speak(`${PET_NAME}\u5230\u4f4d\u3002`), 500);

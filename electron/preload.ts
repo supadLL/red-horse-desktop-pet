@@ -41,4 +41,9 @@ contextBridge.exposeInMainWorld("petDesktop", {
     ipcRenderer.on("pet:typing-beat", listener);
     return () => ipcRenderer.off("pet:typing-beat", listener);
   },
+  onPointerMove(callback: (payload: { screenX: number; screenY: number; at: number }) => void): Unsubscribe {
+    const listener = (_event: Electron.IpcRendererEvent, payload: { screenX: number; screenY: number; at: number }) => callback(payload);
+    ipcRenderer.on("pet:pointer-move", listener);
+    return () => ipcRenderer.off("pet:pointer-move", listener);
+  },
 });
