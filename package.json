@@ -33,7 +33,25 @@
     ],
     "win": {
       "icon": "assets/app-icon.ico",
-      "target": "nsis"
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.entertainment"
+    },
+    "linux": {
+      "icon": "assets/app-icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
     }
   },
   "devDependencies": {
