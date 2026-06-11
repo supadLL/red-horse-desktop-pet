@@ -88,6 +88,18 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       <button class="pet-hitbox" type="button" aria-label="\u629a\u6478${PET_NAME}">
         <span class="pet-sprite" aria-hidden="true"></span>
       </button>
+      <div class="typing-effects" data-beat="idle" aria-hidden="true">
+        <span class="key-pop key-pop-a">A</span>
+        <span class="key-pop key-pop-b">K</span>
+        <span class="tap-spark tap-spark-a"></span>
+        <span class="tap-spark tap-spark-b"></span>
+        <span class="typing-meter">
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+        </span>
+      </div>
     </section>
     <nav class="pet-menu" aria-label="\u684c\u5ba0\u4ea4\u4e92\u83dc\u5355" role="menu" hidden>
       <button class="menu-item" type="button" data-command="skin" role="menuitem">\u5207\u6362\u76ae\u80a4</button>
@@ -107,6 +119,8 @@ const petHitbox = document.querySelector<HTMLButtonElement>(".pet-hitbox")!;
 const sprite = document.querySelector<HTMLElement>(".pet-sprite")!;
 const speech = document.querySelector<HTMLElement>(".speech")!;
 const petMenu = document.querySelector<HTMLElement>(".pet-menu")!;
+const typingEffects = document.querySelector<HTMLElement>(".typing-effects")!;
+const keyPops = Array.from(document.querySelectorAll<HTMLElement>(".key-pop"));
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -258,6 +272,30 @@ function runIdleBeat(): void {
   setTemporaryAction(nextAction, nextAction === "walk" ? 2200 : 1700, pick(actionLines[nextAction]));
 }
 
+function formatKeyLabel(vkCode?: number): string {
+  if (!vkCode) {
+    return "\u952e";
+  }
+  if (vkCode >= 48 && vkCode <= 90) {
+    return String.fromCharCode(vkCode);
+  }
+  const labels: Record<number, string> = {
+    8: "BS",
+    9: "TAB",
+    13: "ENT",
+    16: "SH",
+    17: "CT",
+    18: "ALT",
+    27: "ESC",
+    32: "\u7a7a",
+    37: "\u2190",
+    38: "\u2191",
+    39: "\u2192",
+    40: "\u2193",
+  };
+  return labels[vkCode] || "\u952e";
+}
+
 function startTimers(): void {
   idleTimer = window.setInterval(runIdleBeat, 9000);
   moodTimer = window.setInterval(() => {
@@ -279,7 +317,7 @@ function stopTimers(): void {
   window.clearInterval(moodTimer);
 }
 
-function handleTypingBeat(): void {
+function handleTypingBeat(payload?: { vkCode?: number; at?: number }): void {
   if (state.skin !== "work") {
     return;
   }
@@ -292,9 +330,18 @@ function handleTypingBeat(): void {
   state.action = isBurst && state.keyCount % 4 === 0 ? "typing-fast" : typingSide === 0 ? "typing-left" : "typing-right";
   render();
 
+  const beat = state.action === "typing-fast" ? "fast" : typingSide === 0 ? "left" : "right";
+  typingEffects.dataset.beat = beat;
+  typingEffects.classList.remove("beat-left", "beat-right", "beat-fast");
+  void typingEffects.offsetWidth;
+  typingEffects.classList.add(`beat-${beat}`);
+  keyPops[typingSide].textContent = formatKeyLabel(payload?.vkCode);
+
   window.clearTimeout(typingIdleTimer);
   typingIdleTimer = window.setTimeout(() => {
     state.action = state.keyCount > 40 ? "work-tired" : "thinking";
+    typingEffects.dataset.beat = "idle";
+    typingEffects.classList.remove("beat-left", "beat-right", "beat-fast");
     render();
   }, 650);
 }
@@ -412,8 +459,8 @@ const unsubscribeSkin = window.petDesktop?.onSkinChanged((skin) => {
   setSkin(skin === "work" ? "work" : "classic");
 });
 
-const unsubscribeTyping = window.petDesktop?.onTypingBeat(() => {
-  handleTypingBeat();
+const unsubscribeTyping = window.petDesktop?.onTypingBeat((payload) => {
+  handleTypingBeat(payload);
 });
 
 window.addEventListener("keydown", (event) => {
