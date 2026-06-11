@@ -1,0 +1,410 @@
+:root {
+  --pet-scale: 1;
+  --crimson: #b9271f;
+  --crimson-dark: #771b1b;
+  --gold: #f0b33e;
+  --cream: #ffe6b7;
+  --ink: #2a1211;
+  --glass: rgba(255, 238, 204, 0.78);
+  --glass-strong: rgba(255, 250, 232, 0.92);
+  font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+  background: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+}
+
+button {
+  font: inherit;
+}
+
+.pet-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: end center;
+  padding: 14px 10px 12px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.speech {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  z-index: 5;
+  max-width: 220px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid rgba(98, 35, 20, 0.2);
+  border-radius: 18px 18px 18px 6px;
+  background: var(--glass-strong);
+  box-shadow: 0 8px 24px rgba(94, 28, 18, 0.18);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, -8px) scale(0.94);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+}
+
+.speech.visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.pet-body {
+  position: relative;
+  width: min(80vw, 190px);
+  aspect-ratio: 1;
+  transform: scale(var(--pet-scale));
+  transform-origin: bottom center;
+  transition: transform 180ms ease;
+}
+
+.pet-body[data-skin="work"] {
+  width: min(88vw, 210px);
+}
+
+.aura {
+  position: absolute;
+  inset: 18% 12% 8%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 45% 45%, rgba(255, 212, 89, 0.3), transparent 42%),
+    radial-gradient(circle at 70% 30%, rgba(255, 107, 64, 0.22), transparent 36%);
+  filter: blur(10px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.pet-shadow {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 4px;
+  height: 20px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(50, 18, 12, 0.25), transparent 68%);
+  transform: scaleX(0.82);
+  pointer-events: none;
+}
+
+.pet-hitbox {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: grab;
+  outline: none;
+  -webkit-app-region: no-drag;
+}
+
+.pet-hitbox:active {
+  cursor: grabbing;
+}
+
+.pet-hitbox:focus-visible {
+  filter: drop-shadow(0 0 0.45rem rgba(255, 226, 102, 0.9));
+}
+
+.pet-sprite {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 0 0;
+  filter: drop-shadow(0 12px 10px rgba(78, 22, 14, 0.24));
+  animation: breathe 2.8s ease-in-out infinite;
+}
+
+.fallback-horse {
+  display: none;
+}
+
+.pet-body[data-action="walk"] .pet-sprite {
+  background-position: 50% 0;
+  animation: walk-bob 520ms ease-in-out infinite;
+}
+
+.pet-body[data-action="happy"] .pet-sprite {
+  background-position: 100% 0;
+  animation: happy-hop 720ms cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+.pet-body[data-action="eat"] .pet-sprite {
+  background-position: 0 100%;
+  animation: eat-nod 900ms ease-in-out infinite;
+}
+
+.pet-body[data-action="sleepy"] .pet-sprite {
+  background-position: 50% 100%;
+  animation: sleepy-sway 2.4s ease-in-out infinite;
+  opacity: 0.94;
+}
+
+.pet-body[data-action="drag"] .pet-sprite {
+  background-position: 100% 100%;
+  animation: drag-wiggle 420ms ease-in-out infinite;
+}
+
+.pet-body[data-skin="work"] .pet-sprite {
+  background-position: 0 0;
+  animation: work-breathe 1.8s ease-in-out infinite;
+}
+
+.pet-body[data-skin="work"][data-action="typing-left"] .pet-sprite {
+  background-position: 50% 0;
+  animation: key-tap-left 160ms ease-out 1;
+}
+
+.pet-body[data-skin="work"][data-action="typing-right"] .pet-sprite {
+  background-position: 100% 0;
+  animation: key-tap-right 160ms ease-out 1;
+}
+
+.pet-body[data-skin="work"][data-action="typing-fast"] .pet-sprite {
+  background-position: 0 100%;
+  animation: key-tap-fast 240ms steps(2, end) infinite;
+}
+
+.pet-body[data-skin="work"][data-action="thinking"] .pet-sprite {
+  background-position: 50% 100%;
+  animation: glasses-think 2.1s ease-in-out infinite;
+}
+
+.pet-body[data-skin="work"][data-action="work-tired"] .pet-sprite,
+.pet-body[data-skin="work"][data-action="sleepy"] .pet-sprite {
+  background-position: 100% 100%;
+  animation: sleepy-sway 2.4s ease-in-out infinite;
+}
+
+.pet-body[data-skin="work"][data-action="happy"] .pet-sprite {
+  background-position: 0 100%;
+  animation: key-tap-fast 300ms steps(2, end) infinite;
+}
+
+.pet-body[data-skin="work"][data-action="eat"] .pet-sprite {
+  background-position: 50% 100%;
+}
+
+.pet-body[data-skin="work"][data-action="walk"] .pet-sprite,
+.pet-body[data-skin="work"][data-action="drag"] .pet-sprite {
+  background-position: 100% 0;
+}
+
+.pet-body[data-mood="happy"] .aura {
+  opacity: 1;
+  filter: blur(8px) saturate(1.3);
+}
+
+.pet-body[data-mood="hungry"] .aura {
+  background: radial-gradient(circle at 50% 50%, rgba(128, 199, 80, 0.32), transparent 50%);
+}
+
+.pet-body[data-mood="sleepy"] .aura {
+  background: radial-gradient(circle at 50% 50%, rgba(124, 144, 184, 0.24), transparent 54%);
+}
+
+.pet-menu {
+  position: absolute;
+  z-index: 6;
+  min-width: 132px;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid rgba(92, 31, 18, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 247, 221, 0.94);
+  box-shadow: 0 14px 34px rgba(90, 26, 14, 0.2);
+  opacity: 0;
+  transform: translateY(4px) scale(0.96);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+
+.pet-menu[hidden] {
+  display: none;
+}
+
+.pet-menu.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.menu-item {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.62);
+  color: #6e271d;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 -1px 0 rgba(105, 33, 20, 0.12);
+  transition: transform 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: #ffe293;
+  color: #42120e;
+  transform: translateX(2px);
+  outline: none;
+}
+
+.menu-item.danger:hover,
+.menu-item.danger:focus-visible {
+  background: #ffb0a4;
+}
+
+.is-muted .speech {
+  display: none;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.015, 0.99);
+  }
+}
+
+@keyframes happy-hop {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  40% {
+    transform: translateY(-13px) rotate(-3deg);
+  }
+  68% {
+    transform: translateY(-5px) rotate(3deg);
+  }
+}
+
+@keyframes walk-bob {
+  0%,
+  100% {
+    transform: translateX(-2px) translateY(0);
+  }
+  50% {
+    transform: translateX(2px) translateY(-4px);
+  }
+}
+
+@keyframes eat-nod {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  45% {
+    transform: rotate(2deg) translateY(5px);
+  }
+}
+
+@keyframes sleepy-sway {
+  0%,
+  100% {
+    transform: rotate(-1deg);
+  }
+  50% {
+    transform: rotate(1deg) translateY(2px);
+  }
+}
+
+@keyframes drag-wiggle {
+  0%,
+  100% {
+    transform: rotate(-4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-2px);
+  }
+}
+
+@keyframes work-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes key-tap-left {
+  0% {
+    transform: rotate(0deg) translateY(0);
+  }
+  55% {
+    transform: rotate(-2deg) translateY(3px);
+  }
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+}
+
+@keyframes key-tap-right {
+  0% {
+    transform: rotate(0deg) translateY(0);
+  }
+  55% {
+    transform: rotate(2deg) translateY(3px);
+  }
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+}
+
+@keyframes key-tap-fast {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(3px) rotate(1deg);
+  }
+}
+
+@keyframes glasses-think {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    filter: drop-shadow(0 12px 10px rgba(78, 22, 14, 0.24));
+  }
+  50% {
+    transform: translateY(-2px) rotate(-1deg);
+    filter: drop-shadow(0 12px 10px rgba(78, 22, 14, 0.24)) brightness(1.06);
+  }
+}
